@@ -1,33 +1,36 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: visitor-app
+  name: redis-ui
+  namespace: devops
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: visitor-app
+      app: redis-ui
   template:
     metadata:
       labels:
-        app: visitor-app
+        app: redis-ui
     spec:
       containers:
-      - name: app
-        image: k8s.gcr.io/test-webserver:latest
+      - name: redis-ui
+        image: rediscommander/redis-commander:latest # אימג' מודרני ותקין
         env:
-        - name: REDIS_HOST
-          value: "redis-service" # השם שנתת לשירות של הרדיס!
+        - name: REDIS_HOSTS
+          value: "local:redis-service:6379" # מתחבר לשירות שיצרת קודם
+        ports:
+        - containerPort: 8081
 ---
 apiVersion: v1
 kind: Service
 metadata:
   name: app-service
+  namespace: devops
 spec:
-  type: NodePort
+  type: ClusterIP
   selector:
-    app: visitor-app
+    app: redis-ui
   ports:
     - port: 80
-      targetPort: 5000
-      nodePort: 30001
+      targetPort: 8081
