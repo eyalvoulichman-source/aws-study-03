@@ -18,14 +18,38 @@ spec:
         ports:
         - containerPort: 6379
 ---
+# 1. השירות של האפליקציה (נחזיר אותו ל-ClusterIP הפשוט)
 apiVersion: v1
 kind: Service
 metadata:
-  name: redis-service # This name becomes the "URL" for your app
+  name: app-service
   namespace: devops
 spec:
+  type: ClusterIP # עכשיו השירות סגור לעולם החיצון
   selector:
-    app: redis
+    app: visitor-app
   ports:
-    - port: 6379
-      targetPort: 6379
+    - port: 80
+      targetPort: 5000
+---
+# 2. חוק ה-Ingress (ה-API Gateway הפשוט שלנו)
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: app-ingress
+  namespace: devops
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /
+spec:
+  ingressClassName: nginx
+  rules:
+  - host: my-app.local # הדומיין שאנחנו רוצים
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: app-service
+            port:
+              number: 80
