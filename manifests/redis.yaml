@@ -1,3 +1,4 @@
+# --- 1. ה-Database (Redis) ---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -18,47 +19,83 @@ spec:
         ports:
         - containerPort: 6379
 ---
-# 1. השירות של האפליקציה (נחזיר אותו ל-ClusterIP הפשוט)
 apiVersion: v1
 kind: Service
 metadata:
-  name: app-service
+  name: redis-service # השירות שה-UI יחפש
   namespace: devops
 spec:
-  type: ClusterIP # עכשיו השירות סגור לעולם החיצון
   selector:
-    app: visitor-app
+    app: redis
+  ports:
+    - port: 6379
+      targetPort: 6379
+---
+
+# --- 2. הממשק הגרפי (Redis Commander UI) ---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: redis-ui
+  namespace: devops
+spec:
+  selector:
+    matchLabels:
+      app: redis-ui
+  template:
+    metadata:
+      labels:
+        app: redis-ui
+    spec:
+      containers:
+      - name: redis-ui
+        image: rediscommander/redis-commander:latest
+        env:
+        - name: REDIS_HOSTS
+          value: "local:redis-service:6379" # חיבור לשירות הרדיס שיצרנו למעלה
+        ports:
+        - containerPort: 8081
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: redis-ui-service
+  namespace: devops
+spec:
+  selector:
+    app: redis-ui
   ports:
     - port: 80
-      targetPort: 5000
+      targetPort: 8081
 ---
+
+# --- 3. ה-Ingress המעודכן (מנתב ל-3 מקומות) ---
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   name: main-ingress
   namespace: devops
   annotations:
-    nginx.ingress.kubernetes.io/rewrite-target: /
+    kubernetes.io/ingress.class: nginx
 spec:
-  ingressClassName: nginx
   rules:
-  - host: my-app.local   # יפנה ל-Redis UI
+  - host: redis-ui.local   # כתובת חדשה לממשק הגרפי
     http:
       paths:
       - path: /
         pathType: Prefix
         backend:
           service:
-            name: app-service
+            name: redis-ui-service
             port:
               number: 80
-  - host: hello.local    # יפנה לאפליקציה הישנה (hello-k8s)
+  - host: hello.local      # כתובת לאפליקציית ה-Hello
     http:
       paths:
       - path: /
         pathType: Prefix
         backend:
           service:
-            name: my-service
+            name: my-service # וודא שזה השם של ה-Service של ה-Hello
             port:
               number: 80
