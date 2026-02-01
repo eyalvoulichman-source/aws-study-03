@@ -1,0 +1,33 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: visitor-app
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: visitor-app
+  template:
+    metadata:
+      labels:
+        app: visitor-app
+    spec:
+      containers:
+      - name: app
+        image: jonashecht/flask-redis-counter:latest
+        env:
+        - name: REDIS_HOST
+          value: "redis-service" # השם שנתת לשירות של הרדיס!
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: app-service
+spec:
+  type: NodePort
+  selector:
+    app: visitor-app
+  ports:
+    - port: 80
+      targetPort: 5000
+      nodePort: 30001
