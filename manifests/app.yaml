@@ -33,25 +33,22 @@ spec:
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: simple-counter
+  name: counter-app
   namespace: devops
 spec:
   selector:
     matchLabels:
-      app: counter-web
+      app: counter
   template:
     metadata:
       labels:
-        app: counter-web
+        app: counter
     spec:
       containers:
       - name: web
-        image: image: ghcr.io/eyalvoulichman-source/counter-app:latest
-        command: ["/bin/sh", "-c"]
-        args:
-          - pip install flask redis;
-            echo 'from flask import Flask; import redis; app = Flask(__name__); r = redis.Redis(host="redis-service", port=6379); @app.route("/")\ndef index():\n  count = r.incr("counter")\n  return f"count:{count}"\nif __name__ == "__main__": app.run(host="0.0.0.0", port=5000)' > app.py;
-            python app.py
+        # שים לב: תחליף את הכתובת למטה לכתובת ה-Image האמיתית שלך ב-GitHub
+        image: ghcr.io/eyalvoulichman-source/counter-app:latest
+        imagePullPolicy: Always
         ports:
         - containerPort: 5000
 ---
@@ -62,7 +59,7 @@ metadata:
   namespace: devops
 spec:
   selector:
-    app: counter-web
+    app: counter
   ports:
     - port: 80
       targetPort: 5000
